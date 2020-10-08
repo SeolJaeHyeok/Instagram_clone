@@ -1,18 +1,24 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/basic.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
 
 class CreatePage extends StatefulWidget {
+  final FirebaseUser user;
+
+  CreatePage(this.user);
   @override
   _CreatePageState createState() => _CreatePageState();
 }
 
 class _CreatePageState extends State<CreatePage> {
   final textEditingController = TextEditingController();
-  PickedFile _image;
 
   @override
   void dispose() {
@@ -21,6 +27,7 @@ class _CreatePageState extends State<CreatePage> {
     textEditingController.dispose();
     super.dispose();
   }
+  PickedFile _image;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +45,31 @@ class _CreatePageState extends State<CreatePage> {
       actions: <Widget>[
         IconButton(
           icon: Icon(Icons.send),
-          onPressed: () {},
+          onPressed: () {
+            final firebaseStorageRef = FirebaseStorage.instance
+                .ref()
+                .child('post')
+                .child('${DateTime.now().millisecondsSinceEpoch}.png');
+            final task = firebaseStorageRef.putFile(
+                File(_image.path), StorageMetadata(contentType: 'image/png'));
+            task.onComplete.then((value) {
+              var downloadUrl = value.ref.getDownloadURL();
+              
+              downloadUrl.then((uri) {
+                var doc = Firestore.instance.collection('post').document();
+                doc.setData({
+                  'id': doc.documentID,
+                  'photo': uri.toString(),
+                  'contents': textEditingController.text,
+                  'email': widget.user.email,
+                  'displayName': widget.user.displayName,
+                  'usePhotoUrl': widget.user.photoUrl
+                }).then((value) {
+                  Navigator.pop(context);
+                });
+              });
+            });
+          },
         )
       ],
     );
@@ -76,10 +107,10 @@ class _CreatePageState extends State<CreatePage> {
   }
 
   Future _getImage() async {
-    final pickedImage =
+    final pickedimage =
     await ImagePicker().getImage(source: ImageSource.gallery);
     setState(() {
-      _image = pickedImage;
+      _image = pickedimage;
     });
   }
 }
