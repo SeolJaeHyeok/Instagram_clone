@@ -59,11 +59,11 @@ class _CreatePageState extends State<CreatePage> {
                 var doc = Firestore.instance.collection('post').document();
                 doc.setData({
                   'id': doc.documentID,
-                  'photo': uri.toString(),
+                  'photoUrl': uri.toString(),
                   'contents': textEditingController.text,
                   'email': widget.user.email,
                   'displayName': widget.user.displayName,
-                  'usePhotoUrl': widget.user.photoUrl
+                  'userPhotoUrl': widget.user.photoUrl
                 }).then((value) {
                   Navigator.pop(context);
                 });
